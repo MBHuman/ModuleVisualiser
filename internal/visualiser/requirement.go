@@ -21,8 +21,9 @@ type RequirementNode struct {
 // NewRequirementNode creates a new RequirementNode instance with the given URL.
 func NewRequirementNode(url string) *RequirementNode {
 	return &RequirementNode{
-		url:    url,
-		childs: make(map[string]*RequirementNode, CAP_SIZE),
+		url:     url,
+		childs:  make(map[string]*RequirementNode, CAP_SIZE),
+		reqType: DIRECT,
 	}
 }
 
@@ -49,7 +50,10 @@ func NewRequirement() *Requirement {
 
 // Add link between newNode and parentNode in key value graph "Requirements",
 // parentNode can be nil, or other newNode can't be nil and can't contains "root" url.
-func (r *Requirement) AddRequirementNodes(newNode, parentNode *RequirementNode) error {
+func (req *Requirement) AddRequirementNodes(
+	newNode,
+	parentNode *RequirementNode,
+) error {
 	if newNode == nil {
 		return fmt.Errorf("NEW NODE CAN'T BE nil")
 	}
@@ -59,52 +63,57 @@ func (r *Requirement) AddRequirementNodes(newNode, parentNode *RequirementNode) 
 
 	nodeN := newNode
 	nodeP := parentNode
-	if _, ok := r.elementsSet[nodeN.url]; !ok {
-		r.elementsSet[nodeN.url] = nodeN
+	if _, ok := req.elementsSet[nodeN.url]; !ok {
+		req.elementsSet[nodeN.url] = nodeN
 	} else {
-		nodeN = r.elementsSet[nodeN.url]
+		nodeN = req.elementsSet[nodeN.url]
 	}
 
 	if nodeP == nil {
-		nodeP = r.root
+		nodeP = req.root
 	}
 
-	if _, ok := r.elementsSet[nodeP.url]; !ok {
-		r.elementsSet[nodeP.url] = nodeP
+	if _, ok := req.elementsSet[nodeP.url]; !ok {
+		req.elementsSet[nodeP.url] = nodeP
 	} else {
-		nodeP = r.elementsSet[nodeP.url]
+		nodeP = req.elementsSet[nodeP.url]
 	}
 
 	nodeP.addChild(nodeN)
 
-	if _, ok := r.elementsParents[nodeN.url]; !ok {
-		r.elementsParents[nodeN.url] = make(map[string]*RequirementNode, CAP_SIZE)
+	if _, ok := req.elementsParents[nodeN.url]; !ok {
+		req.elementsParents[nodeN.url] = make(map[string]*RequirementNode, CAP_SIZE)
 	}
-	r.elementsParents[nodeN.url][nodeP.url] = nodeP
-	if _, ok := r.elementsParents[nodeN.url][r.root.url]; len(r.elementsParents[nodeN.url]) > 1 && ok {
-		delete(r.elementsParents[nodeN.url], r.root.url)
+	req.elementsParents[nodeN.url][nodeP.url] = nodeP
+	if _, ok := req.elementsParents[nodeN.url][req.root.url]; len(req.elementsParents[nodeN.url]) > 1 && ok {
+		delete(req.elementsParents[nodeN.url], req.root.url)
+	}
+	if _, ok := req.elementsParents[nodeN.url][req.root.url]; !ok {
+		nodeN.reqType = INDIRECT
 	}
 
 	return nil
 }
 
 // Add requirement to Requirements key value graph
-func (r *Requirement) AddRequirement(newNodeUrl, parentUrl string) error {
+func (req *Requirement) AddRequirement(
+	newNodeUrl, parentUrl string,
+) error {
 	newNode := NewRequirementNode(newNodeUrl)
 	parentNode := NewRequirementNode(parentUrl)
-	err := r.AddRequirementNodes(newNode, parentNode)
-	if err != nil {
+	if err := req.AddRequirementNodes(newNode, parentNode); err != nil {
 		return err
 	}
 	return nil
 }
 
 // Add requirement to Requirement key value graph, but parentUrl automaticaly root
-func (r *Requirement) AddSingleRequirement(newNodeUrl string) error {
+func (req *Requirement) AddSingleRequirement(
+	newNodeUrl string,
+) error {
 	newNode := NewRequirementNode(newNodeUrl)
-	err := r.AddRequirementNodes(newNode, nil)
-	if err != nil {
+	if err := req.AddRequirementNodes(newNode, nil); err != nil {
 		return err
 	}
-	return err
+	return nil
 }

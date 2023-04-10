@@ -9,6 +9,7 @@ import (
 func TestAddRequirementNodes(t *testing.T) {
 	convey.Convey("Given a requirement tree", t, func() {
 		req := NewRequirement()
+		req2 := NewRequirement()
 
 		convey.Convey("When a new requirement node is added to the tree without a parent", func() {
 			newNode := NewRequirementNode("newNode")
@@ -68,6 +69,24 @@ func TestAddRequirementNodes(t *testing.T) {
 
 			convey.Convey("And the parent of new node should not be root", func() {
 				convey.So(req.elementsParents[newNode.url][req.root.url], convey.ShouldNotEqual, req.root)
+			})
+		})
+
+		convey.Convey("When nodes are added in requirements graph", func() {
+			n1 := NewRequirementNode("n1")
+			n2 := NewRequirementNode("n2")
+			req2.AddRequirementNodes(n1, nil)
+			err := req2.AddRequirementNodes(n2, n1)
+
+			convey.Convey("Then requirement nodes should add to requirements", func() {
+				convey.So(err, convey.ShouldBeNil)
+			})
+			convey.Println(req2)
+			convey.Convey("And the node with root parent should be DIRECT", func() {
+				convey.So(req2.elementsSet[n1.url].reqType, convey.ShouldEqual, DIRECT)
+			})
+			convey.Convey("And the node with n1 parent should be INDIRECT", func() {
+				convey.So(req2.elementsSet[n2.url].reqType, convey.ShouldEqual, INDIRECT)
 			})
 		})
 	})

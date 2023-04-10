@@ -1,0 +1,100 @@
+@startuml ModulesVisualiser
+
+title "Go modules visualiser"
+
+interface IVisualiser {
+    + visualise(): void
+    + readFiles(files []string): void
+    + readFolder(path string): void
+}
+
+class FileModules {
+    + modules: []string
+    + file: string
+}
+
+class Visualiser {
+    + files: []string
+    - fileModules: map[string]FileModules
+    - graph: Graph
+    --
+    + readFiles(files []string): void
+    + readFolder(path string): void
+}
+
+class VisualiserConsole {
+    + visualise(): void
+}
+
+class VisualiserPUML {
+    + visualise(): void
+}
+
+
+interface INode {
+    + addChild(url): void
+}
+
+class Node {
+    - url: string
+    - title: string
+    - childs: map[string]Node
+    --
+    + addChild(url): void
+}
+
+class NodeModule {
+}
+
+class NodeFile {
+}
+
+class FilePattern {
+    + pattern: string
+    + regex: Regex
+}
+
+class RequirementNode {
+    url string
+    childs map[string]Requirement
+}
+
+class Requirement {
+    + root RequirementNode
+    --
+    + addRequirement(Requirement)
+}
+
+
+class FileMod {
+    - requirementsRoot: Requirement
+    --
+    + getRequirements(): err
+}
+
+class Graph {
+    - nodes: Node
+    - title: string
+    - files: map[string]Node
+    --
+}
+
+Node ..|> INode
+VisualiserConsole --|> Visualiser
+VisualiserPUML --|> Visualiser
+Visualiser ..|> IVisualiser
+Visualiser ..> FilePattern
+INode "*" --o "1" Graph
+Node "1" -- "*" Node
+NodeModule ..|> Node
+NodeFile ..|> Node
+Graph "1" --* Visualiser
+FileModules "1" --* Visualiser
+Visualiser ..> FileMod
+
+RequirementNode "1" -- "*" RequirementNode
+Requirement --o RequirementNode
+FileMod --o Requirement
+
+
+@enduml

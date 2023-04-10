@@ -1,0 +1,25 @@
+@startuml
+
+class Graph {
+  - vertices: List<Vertex>
+  - edges: List<Edge>
+  + addVertex(vertex: Vertex): void
+  + addEdge(from: Vertex, to: Vertex): void
+}
+
+class Vertex {
+  - id: int
+  - neighbors: List<Vertex>
+  + addNeighbor(neighbor: Vertex): void
+}
+
+class Edge {
+  - from: Vertex
+  - to: Vertex
+}
+
+Graph o-- Vertex
+Graph o-- Edge
+Vertex "*" -- "1" Vertex : has neighbors
+
+@enduml

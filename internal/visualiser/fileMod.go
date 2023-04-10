@@ -2,7 +2,10 @@ package visualiser
 
 import (
 	"bufio"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 )
@@ -11,6 +14,7 @@ type FileMod struct {
 	filePath    string
 	deps        map[string][]string
 	requirement *Requirement
+	hash        string
 }
 
 // Create new fileMod object, automaticaly extracts data from file
@@ -28,6 +32,48 @@ func NewFileMod(filePath string) (*FileMod, error) {
 		return nil, err
 	}
 	return fileMod, nil
+}
+
+func (fileMod *FileMod) updateHash() error {
+	hash := sha256.New()
+	file, err := os.Open(fileMod.filePath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	// Copy the contents of the file to the hash object
+	if _, err := io.Copy(hash, file); err != nil {
+		return err
+	}
+
+	// Compute the final hash value as a hexadecimal string
+	hashValue := hex.EncodeToString(hash.Sum(nil))
+	fileMod.hash = hashValue
+	return nil
+}
+
+func (fileMod *FileMod) Compare(newFile string) (bool, error) {
+	file, err := os.Open(newFile)
+	if err != nil {
+		return false, err
+	}
+	defer file.Close()
+
+	// Create a hash object
+	hash := sha256.New()
+
+	// Copy the contents of the file to the hash object
+	if _, err := io.Copy(hash, file); err != nil {
+		return false, err
+	}
+
+	// Compute the final hash value as a hexadecimal string
+	hashValue := hex.EncodeToString(hash.Sum(nil))
+
+	if hashValue == fileMod.hash {
+		return true, nil
+	}
+	return false, nil
 }
 
 // Extract data from file

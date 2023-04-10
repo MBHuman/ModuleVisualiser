@@ -1,6 +1,11 @@
 package visualiser
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"io"
+	"io/ioutil"
+	"os"
 	"sort"
 	"testing"
 
@@ -116,5 +121,82 @@ func TestFileMod_getRequirements(t *testing.T) {
 			})
 
 		})
+	})
+}
+
+func TestFileModWithZeroHash(t *testing.T) {
+	convey.Convey("FileMod struct with zero hash should always return false", t, func() {
+		// Create a temporary file for testing
+		tmpfile, err := ioutil.TempFile("", "testfile")
+		convey.So(err, convey.ShouldBeNil)
+		defer os.Remove(tmpfile.Name())
+
+		// Write some content to the file
+		content := []byte("This is some test content")
+		_, err = tmpfile.Write(content)
+		convey.So(err, convey.ShouldBeNil)
+
+		// Create a FileMod struct with hash value 0
+		// Create a hash object
+		hash := sha256.New()
+
+		// Copy the contents of the file to the hash object
+		_, err = io.Copy(hash, tmpfile)
+		convey.So(err, convey.ShouldBeNil)
+
+		// Compute the final hash value as a hexadecimal string
+		hashValue := hex.EncodeToString(hash.Sum(nil))
+
+		// Close the file
+		err = tmpfile.Close()
+		convey.So(err, convey.ShouldBeNil)
+
+		fileMod := FileMod{hash: hashValue}
+
+		// Compare the file's hash value
+		hashMatch, err := fileMod.Compare(tmpfile.Name())
+
+		convey.Convey("Should always return false", func() {
+			convey.So(err, convey.ShouldBeNil)
+			convey.So(hashMatch, convey.ShouldBeFalse)
+		})
+	})
+}
+
+func TestFileModUpdateHash(t *testing.T) {
+	// Initialize the Convey test suite
+	convey.Convey("Given a FileMod object", t, func() {
+		fileMod := &FileMod{
+			filePath: "test.txt",
+		}
+
+		// Create a test file with some contents
+		file, err := os.Create(fileMod.filePath)
+		convey.So(err, convey.ShouldBeNil)
+		defer file.Close()
+		file.WriteString("This is a test file")
+
+		convey.Convey("When updateHash is called", func() {
+			err := fileMod.updateHash()
+
+			convey.Convey("No error should be returned", func() {
+				convey.So(err, convey.ShouldBeNil)
+			})
+
+			convey.Convey("The hash should be computed correctly", func() {
+				hash := sha256.New()
+				file, err := os.Open(fileMod.filePath)
+				convey.So(err, convey.ShouldBeNil)
+				defer file.Close()
+				if _, err := io.Copy(hash, file); err != nil {
+					t.Fatal(err)
+				}
+				expectedHash := hex.EncodeToString(hash.Sum(nil))
+				convey.So(fileMod.hash, convey.ShouldEqual, expectedHash)
+			})
+		})
+
+		// Clean up the test file
+		os.Remove(fileMod.filePath)
 	})
 }

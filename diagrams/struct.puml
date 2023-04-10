@@ -11,6 +11,7 @@ interface IVisualiser {
 class FileModules {
     + modules: []string
     + file: string
+    + hash: hash64
 }
 
 class Visualiser {
@@ -28,25 +29,6 @@ class VisualiserConsole {
 
 class VisualiserPUML {
     + visualise(): void
-}
-
-
-interface INode {
-    + addChild(url): void
-}
-
-class Node {
-    - url: string
-    - title: string
-    - childs: map[string]Node
-    --
-    + addChild(url): void
-}
-
-class NodeModule {
-}
-
-class NodeFile {
 }
 
 class FilePattern {
@@ -71,24 +53,10 @@ class FileMod {
     --
     + getRequirements(): err
 }
-
-class Graph {
-    - nodes: Node
-    - title: string
-    - files: map[string]Node
-    --
-}
-
-Node ..|> INode
 VisualiserConsole --|> Visualiser
 VisualiserPUML --|> Visualiser
 Visualiser ..|> IVisualiser
 Visualiser ..> FilePattern
-INode "*" --o "1" Graph
-Node "1" -- "*" Node
-NodeModule ..|> Node
-NodeFile ..|> Node
-Graph "1" --* Visualiser
 FileModules "1" --* Visualiser
 Visualiser ..> FileMod
 
